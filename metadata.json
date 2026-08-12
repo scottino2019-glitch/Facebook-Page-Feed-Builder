@@ -1,0 +1,6 @@
+{
+  "name": "Facebook Page & Feed Builder",
+  "description": "Crea e gestisci una bacheca in stile Facebook con profilo personalizzabile, post, reel, video e immagini. Esporta e carica file JSON o esporta l'HTML dinamico pronto per il tuo sito.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

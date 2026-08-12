@@ -1,0 +1,780 @@
+import { FBPageData } from '../types';
+
+export function generateStandaloneHtml(jsonFileName = 'facebook_feed.json'): string {
+  return `<!DOCTYPE html>
+<html lang="it" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagina Facebook</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons for Facebook icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            fb: {
+              blue: '#1877F2',
+              hoverBlue: '#166FE5',
+              bgLight: '#F0F2F5',
+              cardLight: '#FFFFFF',
+              bgDark: '#18191A',
+              cardDark: '#242526',
+              hoverDark: '#3A3B3C',
+              textDark: '#E4E6EB',
+              subtextDark: '#B0B3B8',
+              borderDark: '#393A3B'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .fb-gradient-purple { background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%); color: #fff; }
+    .fb-gradient-blue { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: #fff; }
+    .fb-gradient-dark { background: linear-gradient(135deg, #232526 0%, #414345 100%); color: #fff; }
+    .fb-gradient-pink { background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%); color: #fff; }
+    .fb-gradient-green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #fff; }
+    /* Hide scrollbar */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-[#F0F2F5] dark:bg-[#18191A] text-gray-900 dark:text-[#E4E6EB] min-h-screen">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-50 bg-white dark:bg-[#242526] border-b border-gray-200 dark:border-[#393A3B] shadow-sm px-4 h-14 flex items-center justify-between">
+    <!-- Left: Logo & Search -->
+    <div class="flex items-center gap-2">
+      <div onclick="switchTab('posts')" class="text-[#1877F2] text-3xl font-bold flex items-center gap-1 cursor-pointer">
+        <i class="fab fa-facebook"></i>
+      </div>
+      <div class="relative hidden sm:block">
+        <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+        <input id="searchInput" oninput="handleHtmlSearch()" type="text" placeholder="Cerca su Facebook..." class="bg-[#F0F2F5] dark:bg-[#3A3B3C] text-sm pl-9 pr-4 py-2 rounded-full outline-none w-60 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-[#1877F2]/50" />
+      </div>
+    </div>
+
+    <!-- Center Navigation Icons (Interactive Menu) -->
+    <div class="hidden md:flex items-center gap-1 h-full">
+      <button onclick="switchTab('posts')" id="nav-home" class="h-full px-8 text-[#1877F2] border-b-4 border-[#1877F2] flex items-center justify-center text-xl" title="Home / Post">
+        <i class="fas fa-home"></i>
+      </button>
+      <button onclick="switchTab('videos')" id="nav-videos" class="h-full px-8 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-lg flex items-center justify-center text-xl transition-colors" title="Watch / Video">
+        <i class="fas fa-tv"></i>
+      </button>
+      <button onclick="switchTab('photos')" id="nav-photos" class="h-full px-8 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-lg flex items-center justify-center text-xl transition-colors" title="Foto">
+        <i class="fas fa-images"></i>
+      </button>
+      <button onclick="switchTab('friends')" id="nav-friends" class="h-full px-8 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-lg flex items-center justify-center text-xl transition-colors" title="Amici">
+        <i class="fas fa-users"></i>
+      </button>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+      <!-- Telegram / Messenger Link -->
+      <a id="navTelegramLink" href="https://t.me/telegram" target="_blank" class="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#3A3B3C] flex items-center justify-center text-[#0088cc] hover:opacity-80 relative" title="Apri Telegram (Messenger)">
+        <i class="fab fa-telegram-plane text-lg"></i>
+      </a>
+
+      <!-- Bell Notifications Dropdown -->
+      <div class="relative">
+        <button id="notifBellBtn" onclick="toggleNotifications()" class="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#3A3B3C] flex items-center justify-center text-gray-700 dark:text-gray-200 hover:opacity-80 relative" title="Notifiche">
+          <i class="fas fa-bell text-lg"></i>
+          <span id="notifBadge" class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">0</span>
+        </button>
+
+        <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#242526] rounded-xl shadow-2xl border border-gray-200 dark:border-[#393A3B] z-50 overflow-hidden">
+          <div class="p-3.5 border-b border-gray-200 dark:border-[#393A3B] flex items-center justify-between">
+            <h3 class="font-bold text-gray-900 dark:text-gray-100 text-base flex items-center gap-2">
+              <i class="fas fa-bell text-[#1877F2]"></i> Notifiche
+            </h3>
+            <button onclick="toggleNotifications()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div id="notifList" class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-[#393A3B]">
+            <!-- Injected notifications -->
+          </div>
+          <div class="p-2 bg-gray-50 dark:bg-[#3A3B3C]/50 text-center border-t border-gray-200 dark:border-[#393A3B]">
+            <button onclick="markAllNotificationsRead()" class="text-xs text-[#1877F2] font-semibold hover:underline">
+              <i class="fas fa-check"></i> Segna tutte come lette
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button id="themeToggleBtn" onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#3A3B3C] flex items-center justify-center text-gray-700 dark:text-gray-200 hover:opacity-80" title="Cambia Tema">
+        <i class="fas fa-moon dark:hidden"></i>
+        <i class="fas fa-sun hidden dark:inline text-amber-400"></i>
+      </button>
+
+      <img id="navAvatar" onclick="switchTab('about')" src="" class="w-9 h-9 rounded-full object-cover border border-gray-300 cursor-pointer" alt="Avatar" />
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto pb-12">
+    <!-- Cover Photo & Profile Banner -->
+    <div class="bg-white dark:bg-[#242526] shadow">
+      <!-- Cover -->
+      <div class="relative h-48 sm:h-72 md:h-96 w-full bg-gray-300 overflow-hidden">
+        <img id="coverImg" src="" class="w-full h-full object-cover" alt="Copertina" />
+      </div>
+
+      <!-- Profile Header Info Bar -->
+      <div class="max-w-5xl mx-auto px-4 pb-4">
+        <div class="flex flex-col md:flex-row items-center md:items-end justify-between -mt-16 md:-mt-8 mb-4 gap-4">
+          <div class="flex flex-col md:flex-row items-center md:items-end gap-4 text-center md:text-left">
+            <!-- Profile Avatar -->
+            <div class="relative w-36 h-36 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-[#242526] overflow-hidden bg-gray-200 shadow-md">
+              <img id="profileImg" src="" class="w-full h-full object-cover" alt="Foto Profilo" />
+            </div>
+            <!-- Name & Bio -->
+            <div class="mb-2">
+              <h1 class="text-2xl md:text-3xl font-bold flex items-center justify-center md:justify-start gap-2">
+                <span id="profileName">Caricamento...</span>
+                <i id="verifiedBadge" class="fas fa-check-circle text-[#1877F2] text-xl hidden"></i>
+              </h1>
+              <p id="profileCategory" class="text-gray-500 dark:text-[#B0B3B8] text-sm font-medium"></p>
+              <p id="friendsCount" class="text-gray-500 dark:text-[#B0B3B8] text-sm mt-1"></p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2">
+            <button class="bg-[#1877F2] hover:bg-[#166FE5] text-white font-medium px-4 py-2 rounded-md text-sm flex items-center gap-2 shadow-sm">
+              <i class="fas fa-plus"></i> Segui
+            </button>
+            <a id="headerTelegramBtn" href="https://t.me/telegram" target="_blank" class="bg-gray-200 dark:bg-[#3A3B3C] hover:bg-gray-300 dark:hover:bg-[#4E4F50] text-gray-800 dark:text-gray-200 font-medium px-4 py-2 rounded-md text-sm flex items-center gap-2">
+              <i class="fab fa-telegram-plane text-[#0088cc]"></i> Messaggio (Telegram)
+            </a>
+          </div>
+        </div>
+
+        <hr class="border-gray-200 dark:border-[#393A3B] my-2" />
+
+        <!-- Profile Navigation Tabs -->
+        <div class="flex items-center gap-1 overflow-x-auto text-sm font-medium text-gray-600 dark:text-[#B0B3B8] no-scrollbar">
+          <button onclick="switchTab('posts')" id="tab-posts" class="px-4 py-3 text-[#1877F2] border-b-4 border-[#1877F2] font-semibold whitespace-nowrap">Post</button>
+          <button onclick="switchTab('about')" id="tab-about" class="px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md whitespace-nowrap">Informazioni</button>
+          <button onclick="switchTab('friends')" id="tab-friends" class="px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md whitespace-nowrap">Amici</button>
+          <button onclick="switchTab('photos')" id="tab-photos" class="px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md whitespace-nowrap">Foto</button>
+          <button onclick="switchTab('videos')" id="tab-videos" class="px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md whitespace-nowrap">Video</button>
+          <button onclick="switchTab('reels')" id="tab-reels" class="px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md whitespace-nowrap">Reel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="max-w-5xl mx-auto px-4 mt-4">
+      
+      <!-- 1. POSTS TAB CONTENT -->
+      <div id="content-posts" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <!-- Left Sidebar (Intro Box) -->
+        <div class="md:col-span-5 space-y-4">
+          <div class="bg-white dark:bg-[#242526] p-4 rounded-lg shadow border border-gray-200 dark:border-[#393A3B]">
+            <h2 class="text-lg font-bold mb-3">Introduzione</h2>
+            <p id="introBio" class="text-center text-sm mb-4 text-gray-700 dark:text-gray-300 font-normal whitespace-pre-wrap"></p>
+            
+            <div id="introList" class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+              <!-- Dynamically populated intro list -->
+            </div>
+          </div>
+
+          <!-- Featured Photos Box -->
+          <div class="bg-white dark:bg-[#242526] p-4 rounded-lg shadow border border-gray-200 dark:border-[#393A3B]">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-bold">Foto in evidenza</h2>
+            </div>
+            <div id="featuredPhotosGrid" class="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
+              <!-- Photos injected here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Main Feed -->
+        <div id="postsFeed" class="md:col-span-7 space-y-4">
+          <!-- Posts will be rendered here dynamically -->
+        </div>
+      </div>
+
+      <!-- 2. INFORMAZIONI (ABOUT) TAB -->
+      <div id="content-about" class="hidden bg-white dark:bg-[#242526] p-6 rounded-lg shadow border border-gray-200 dark:border-[#393A3B] space-y-6">
+        <div class="border-b border-gray-200 dark:border-[#393A3B] pb-3">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <i class="fas fa-info-circle text-[#1877F2]"></i> Informazioni e Dettagli Profilo
+          </h2>
+        </div>
+        <div id="aboutFullContent" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- 3. AMICI (FRIENDS) TAB -->
+      <div id="content-friends" class="hidden bg-white dark:bg-[#242526] p-6 rounded-lg shadow border border-gray-200 dark:border-[#393A3B] space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-200 dark:border-[#393A3B] pb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <i class="fas fa-user-friends text-[#1877F2]"></i> Amici
+            </h2>
+            <p id="friendsTabCount" class="text-xs text-gray-500 mt-0.5"></p>
+          </div>
+        </div>
+        <div id="friendsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Friends populated dynamically -->
+        </div>
+      </div>
+
+      <!-- 4. FOTO (PHOTOS) TAB -->
+      <div id="content-photos" class="hidden bg-white dark:bg-[#242526] p-6 rounded-lg shadow border border-gray-200 dark:border-[#393A3B] space-y-4">
+        <div class="border-b border-gray-200 dark:border-[#393A3B] pb-3">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <i class="fas fa-images text-[#1877F2]"></i> Tutte le Foto
+          </h2>
+        </div>
+        <div id="allPhotosGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <!-- Photos populated dynamically -->
+        </div>
+      </div>
+
+      <!-- 5. VIDEO TAB -->
+      <div id="content-videos" class="hidden bg-white dark:bg-[#242526] p-6 rounded-lg shadow border border-gray-200 dark:border-[#393A3B] space-y-4">
+        <div class="border-b border-gray-200 dark:border-[#393A3B] pb-3">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <i class="fas fa-video text-red-500"></i> Tutti i Video
+          </h2>
+        </div>
+        <div id="allVideosGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Videos populated dynamically -->
+        </div>
+      </div>
+
+      <!-- 6. REELS TAB -->
+      <div id="content-reels" class="hidden bg-white dark:bg-[#242526] p-6 rounded-lg shadow border border-gray-200 dark:border-[#393A3B] space-y-4">
+        <div class="border-b border-gray-200 dark:border-[#393A3B] pb-3">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <i class="fas fa-film text-pink-600"></i> Tutti i Reel
+          </h2>
+        </div>
+        <div id="allReelsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <!-- Reels populated dynamically -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Lightbox Modal for Fullsize Images -->
+  <div id="htmlLightbox" onclick="closeLightbox()" class="fixed inset-0 z-50 bg-black/95 hidden flex items-center justify-center p-4">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white bg-black/60 hover:bg-black/90 p-3 rounded-full text-xl z-10">
+      <i class="fas fa-times"></i>
+    </button>
+    <img id="lightboxImg" src="" class="max-w-full max-h-[92vh] object-contain rounded-lg shadow-2xl" onclick="event.stopPropagation()" />
+  </div>
+
+  <!-- JavaScript to Fetch JSON & Render Page -->
+  <script>
+    let pageData = null;
+    const JSON_FILE = '${jsonFileName}';
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    function openLightbox(url) {
+      if (!url) return;
+      document.getElementById('lightboxImg').src = url;
+      document.getElementById('htmlLightbox').classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+      document.getElementById('htmlLightbox').classList.add('hidden');
+    }
+
+    function toggleNotifications() {
+      const dropdown = document.getElementById('notifDropdown');
+      if (dropdown) dropdown.classList.toggle('hidden');
+    }
+
+    function markAllNotificationsRead() {
+      if (!pageData || !pageData.notifications) return;
+      pageData.notifications.forEach(n => n.isUnread = false);
+      renderNotifications();
+    }
+
+    function renderNotifications() {
+      if (!pageData) return;
+      const notifs = pageData.notifications || [];
+      const unreadCount = notifs.filter(n => n.isUnread !== false).length;
+      const badge = document.getElementById('notifBadge');
+      if (badge) {
+        badge.textContent = unreadCount;
+        if (unreadCount > 0) badge.classList.remove('hidden');
+        else badge.classList.add('hidden');
+      }
+
+      const list = document.getElementById('notifList');
+      if (!list) return;
+      if (notifs.length === 0) {
+        list.innerHTML = '<div class="p-4 text-center text-gray-500 text-xs">Nessuna notifica presente.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      notifs.forEach((n, idx) => {
+        const avatar = n.avatar || n.avatarUrl || pageData.profile.avatarUrl;
+        const title = n.title || n.user || 'Utente Facebook';
+        const text = n.text || '';
+        const isUnread = n.isUnread !== false;
+        list.innerHTML += \`
+          <div onclick="markSingleNotifRead(\${idx})" class="p-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-[#3A3B3C] cursor-pointer transition-colors \${isUnread ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}">
+            <img src="\${avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200" />
+            <div class="flex-1 min-w-0">
+              <p class="text-xs text-gray-800 dark:text-gray-200">
+                <span class="font-bold">\${title}</span> \${text}
+              </p>
+              <span class="text-[10px] text-gray-400 mt-0.5 block">\${n.timestamp || ''}</span>
+            </div>
+            \${isUnread ? '<span class="w-2.5 h-2.5 bg-[#1877F2] rounded-full self-center flex-shrink-0"></span>' : ''}
+          </div>
+        \`;
+      });
+    }
+
+    function markSingleNotifRead(idx) {
+      if (!pageData || !pageData.notifications || !pageData.notifications[idx]) return;
+      pageData.notifications[idx].isUnread = false;
+      renderNotifications();
+    }
+
+    function handleHtmlSearch() {
+      const input = document.getElementById('searchInput');
+      if (!input) return;
+      const q = input.value.toLowerCase().trim();
+      
+      const feed = document.getElementById('postsFeed');
+      if (feed) {
+        const posts = feed.querySelectorAll('.fb-post-card');
+        posts.forEach(p => {
+          const txt = p.innerText.toLowerCase();
+          if (!q || txt.includes(q)) {
+            p.style.display = '';
+          } else {
+            p.style.display = 'none';
+          }
+        });
+      }
+    }
+
+    async function init() {
+      try {
+        const response = await fetch(JSON_FILE);
+        if (!response.ok) {
+          throw new Error('Impossibile caricare ' + JSON_FILE);
+        }
+        pageData = await response.json();
+        renderPage();
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML = \`<div class="p-8 text-center text-red-500 font-bold max-w-md mx-auto my-12 bg-white rounded-xl shadow">
+          <i class="fas fa-exclamation-triangle text-4xl mb-3 text-red-500"></i><br>
+          <h3 class="text-lg font-bold text-gray-900">Errore nel caricamento del file JSON</h3>
+          <p class="text-sm text-gray-600 mt-2">Assicurati che il file <code>"\${JSON_FILE}"</code> sia presente nella stessa cartella dell'HTML sul server web.</p>
+        </div>\`;
+      }
+    }
+
+    function renderPage() {
+      if (!pageData) return;
+      const p = pageData.profile;
+
+      // Header & Profile Setup
+      document.getElementById('navAvatar').src = p.avatarUrl;
+      document.getElementById('coverImg').src = p.coverUrl;
+      document.getElementById('profileImg').src = p.avatarUrl;
+      document.getElementById('profileName').textContent = p.name;
+      document.getElementById('profileCategory').textContent = p.category || '';
+      document.getElementById('friendsCount').textContent = p.friendsCount || '';
+
+      if (p.telegramUrl) {
+        const navTg = document.getElementById('navTelegramLink');
+        if (navTg) navTg.href = p.telegramUrl;
+        const headTg = document.getElementById('headerTelegramBtn');
+        if (headTg) headTg.href = p.telegramUrl;
+      }
+
+      if (p.isVerified) {
+        document.getElementById('verifiedBadge').classList.remove('hidden');
+      }
+
+      renderNotifications();
+
+      // 1. Intro Sidebar
+      document.getElementById('introBio').textContent = p.intro.bio || '';
+      
+      const introList = document.getElementById('introList');
+      introList.innerHTML = '';
+      if (p.intro.work) {
+        introList.innerHTML += \`<div class="flex items-center gap-3"><i class="fas fa-briefcase w-5 text-gray-500 text-center"></i><span>\${p.intro.work}</span></div>\`;
+      }
+      if (p.intro.education) {
+        introList.innerHTML += \`<div class="flex items-center gap-3"><i class="fas fa-graduation-cap w-5 text-gray-500 text-center"></i><span>\${p.intro.education}</span></div>\`;
+      }
+      if (p.intro.livesIn) {
+        introList.innerHTML += \`<div class="flex items-center gap-3"><i class="fas fa-home w-5 text-gray-500 text-center"></i><span>\${p.intro.livesIn}</span></div>\`;
+      }
+      if (p.intro.fromLocation) {
+        introList.innerHTML += \`<div class="flex items-center gap-3"><i class="fas fa-map-marker-alt w-5 text-gray-500 text-center"></i><span>\${p.intro.fromLocation}</span></div>\`;
+      }
+      if (p.intro.relationshipStatus) {
+        introList.innerHTML += \`<div class="flex items-center gap-3"><i class="fas fa-heart w-5 text-gray-500 text-center"></i><span>\${p.intro.relationshipStatus}</span></div>\`;
+      }
+      if (p.intro.joinedDate) {
+        introList.innerHTML += \`<div class="flex items-center gap-3"><i class="fas fa-clock w-5 text-gray-500 text-center"></i><span>\${p.intro.joinedDate}</span></div>\`;
+      }
+      if (p.intro.website) {
+        introList.innerHTML += \`<div class="flex items-center gap-3"><i class="fas fa-globe w-5 text-gray-500 text-center"></i><a href="\${p.intro.website}" target="_blank" class="text-[#1877F2] hover:underline truncate">\${p.intro.website}</a></div>\`;
+      }
+
+      // Featured Photos Grid
+      const grid = document.getElementById('featuredPhotosGrid');
+      grid.innerHTML = '';
+      if (p.featuredPhotos && p.featuredPhotos.length > 0) {
+        p.featuredPhotos.forEach(url => {
+          grid.innerHTML += \`<img src="\${url}" class="w-full h-28 object-cover rounded shadow-xs" />\`;
+        });
+      }
+
+      // 2. Render Posts Feed
+      renderPosts(pageData.posts);
+
+      // 3. Render About Tab Details
+      renderAboutTab(p);
+
+      // 4. Render Friends Tab
+      renderFriendsTab();
+
+      // 5. Render Photos Tab
+      renderPhotosTab();
+
+      // 6. Render Videos Tab
+      renderVideosTab();
+
+      // 7. Render Reels Tab
+      renderReelsTab();
+    }
+
+    function renderPosts(posts) {
+      const feed = document.getElementById('postsFeed');
+      feed.innerHTML = '';
+
+      if (!posts || posts.length === 0) {
+        feed.innerHTML = '<div class="bg-white dark:bg-[#242526] p-6 rounded-lg text-center text-gray-500">Nessun post presente sulla bacheca.</div>';
+        return;
+      }
+
+      posts.forEach(post => {
+        const postEl = document.createElement('div');
+        postEl.className = 'fb-post-card bg-white dark:bg-[#242526] rounded-lg shadow border border-gray-200 dark:border-[#393A3B] overflow-hidden';
+        
+        let mediaHtml = '';
+        if (post.type === 'image' && post.imageUrls && post.imageUrls.length > 0) {
+          mediaHtml = \`<div class="mt-2 bg-[#0f0f0f] flex justify-center cursor-pointer" onclick="openLightbox('\${post.imageUrls[0]}')"><img src="\${post.imageUrls[0]}" class="w-full h-auto max-h-[650px] object-contain" /></div>\`;
+        } else if (post.type === 'reel' && post.videoUrl) {
+          mediaHtml = \`<div class="mt-2 relative bg-black flex justify-center py-4">
+            <video src="\${post.videoUrl}" controls class="max-h-[500px] rounded-lg shadow-lg" loop></video>
+          </div>\`;
+        } else if (post.type === 'video' && post.videoUrl) {
+          if (post.isEmbedIframe || post.videoUrl.includes('youtube') || post.videoUrl.includes('embed')) {
+            mediaHtml = \`<div class="mt-2 aspect-video w-full"><iframe src="\${post.videoUrl}" class="w-full h-full" frameborder="0" allowfullscreen></iframe></div>\`;
+          } else {
+            mediaHtml = \`<div class="mt-2"><video src="\${post.videoUrl}" controls class="w-full max-h-[500px]"></video></div>\`;
+          }
+        }
+
+        let bgClass = '';
+        if (post.textBackgroundPreset) {
+          bgClass = 'fb-' + post.textBackgroundPreset + ' p-8 text-center text-2xl font-bold rounded-md my-2';
+        }
+
+        const reactionTotal = Object.values(post.reactions || {}).reduce((a, b) => (Number(a)||0) + (Number(b)||0), 0);
+
+        let commentsHtml = '';
+        if (post.comments && post.comments.length > 0) {
+          commentsHtml = \`<div class="bg-gray-50/80 dark:bg-[#18191A]/60 p-3.5 border-t border-gray-100 dark:border-[#393A3B] space-y-2.5">\`;
+          post.comments.forEach(c => {
+            const avatar = c.authorAvatar || pageData.profile.avatarUrl;
+            const commentText = c.text || c.content || '';
+            commentsHtml += \`
+              <div class="flex items-start gap-2 text-xs">
+                <img src="\${avatar}" class="w-7 h-7 rounded-full object-cover mt-0.5" />
+                <div class="flex-1">
+                  <div class="bg-white dark:bg-[#3A3B3C] p-2.5 rounded-2xl shadow-2xs inline-block">
+                    <span class="font-bold text-gray-900 dark:text-gray-100 block">\${c.authorName}</span>
+                    <p class="text-gray-800 dark:text-gray-200 font-normal mt-0.5">\${commentText}</p>
+                  </div>
+                  <div class="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mt-1 pl-2">
+                    <span class="hover:underline font-semibold cursor-pointer">Mi piace</span>
+                    <span class="hover:underline font-semibold cursor-pointer">Rispondi</span>
+                    <span>\${c.timestamp || ''}</span>
+                  </div>
+                </div>
+              </div>
+            \`;
+          });
+          commentsHtml += \`</div>\`;
+        }
+
+        postEl.innerHTML = \`
+          <div class="p-4">
+            <!-- Author Header -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <img src="\${post.authorAvatar || pageData.profile.avatarUrl}" class="w-10 h-10 rounded-full object-cover" />
+                <div>
+                  <h3 class="font-bold text-sm flex items-center gap-1">
+                    \${post.authorName || pageData.profile.name}
+                    \${post.isVerified ? '<i class="fas fa-check-circle text-[#1877F2] text-xs"></i>' : ''}
+                  </h3>
+                  <p class="text-xs text-gray-500 dark:text-[#B0B3B8] flex items-center gap-1">
+                    \${post.timestamp} • <i class="fas fa-globe-americas"></i>
+                    \${post.isPinned ? '<span class="ml-2 text-[#1877F2] font-semibold"><i class="fas fa-thumbtack"></i> Post fissato</span>' : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content Text -->
+            <div class="mt-3 text-sm whitespace-pre-wrap \${bgClass}">\${post.content || ''}</div>
+          </div>
+
+          \${mediaHtml}
+
+          <!-- Post Footer / Reactions Info -->
+          <div class="px-4 py-2 border-t border-gray-100 dark:border-[#393A3B] text-xs text-gray-500 dark:text-[#B0B3B8] flex items-center justify-between">
+            <div class="flex items-center gap-1">
+              <span class="bg-[#1877F2] text-white p-1 rounded-full text-[10px]"><i class="fas fa-thumbs-up"></i></span>
+              <span class="bg-red-500 text-white p-1 rounded-full text-[10px]"><i class="fas fa-heart"></i></span>
+              <span>\${reactionTotal}</span>
+            </div>
+            <div>\${(post.comments || []).length} commenti • \${post.sharesCount || 0} condivisioni</div>
+          </div>
+
+          <!-- Interaction Buttons -->
+          <div class="flex justify-around py-1 mx-3 border-t border-gray-100 dark:border-[#393A3B]">
+            <button class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md text-gray-600 dark:text-gray-300 font-semibold text-sm">
+              <i class="far fa-thumbs-up"></i> Mi piace
+            </button>
+            <button class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md text-gray-600 dark:text-gray-300 font-semibold text-sm">
+              <i class="far fa-comment"></i> Commenta
+            </button>
+            <button class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 dark:hover:bg-[#3A3B3C] rounded-md text-gray-600 dark:text-gray-300 font-semibold text-sm">
+              <i class="fas fa-share"></i> Condividi
+            </button>
+          </div>
+
+          \${commentsHtml}
+        \`;
+
+        feed.appendChild(postEl);
+      });
+    }
+
+    function renderAboutTab(p) {
+      const container = document.getElementById('aboutFullContent');
+      if (!container) return;
+
+      container.innerHTML = \`
+        <div class="space-y-3 bg-gray-50 dark:bg-[#3A3B3C]/30 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-base border-b pb-2 dark:border-gray-700">Lavoro e Istruzione</h3>
+          <p class="flex items-center gap-2"><i class="fas fa-briefcase text-gray-500"></i> <strong>Lavoro:</strong> \${p.intro.work || 'Non specificato'}</p>
+          <p class="flex items-center gap-2"><i class="fas fa-graduation-cap text-gray-500"></i> <strong>Istruzione:</strong> \${p.intro.education || 'Non specificata'}</p>
+        </div>
+
+        <div class="space-y-3 bg-gray-50 dark:bg-[#3A3B3C]/30 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-base border-b pb-2 dark:border-gray-700">Luoghi in cui hai vissuto</h3>
+          <p class="flex items-center gap-2"><i class="fas fa-home text-gray-500"></i> <strong>Città attuale:</strong> \${p.intro.livesIn || 'Non specificata'}</p>
+          <p class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-gray-500"></i> <strong>Città di origine:</strong> \${p.intro.fromLocation || 'Non specificata'}</p>
+        </div>
+
+        <div class="space-y-3 bg-gray-50 dark:bg-[#3A3B3C]/30 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-base border-b pb-2 dark:border-gray-700">Informazioni di contatto e web</h3>
+          <p class="flex items-center gap-2"><i class="fas fa-globe text-gray-500"></i> <strong>Sito Web:</strong> <a href="\${p.intro.website || '#'}" target="_blank" class="text-[#1877F2] hover:underline">\${p.intro.website || 'Non inserito'}</a></p>
+          <p class="flex items-center gap-2"><i class="fas fa-users text-gray-500"></i> <strong>Follower:</strong> \${p.intro.followersCount || '0'}</p>
+        </div>
+
+        <div class="space-y-3 bg-gray-50 dark:bg-[#3A3B3C]/30 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-base border-b pb-2 dark:border-gray-700">Informazioni di base</h3>
+          <p class="flex items-center gap-2"><i class="fas fa-heart text-gray-500"></i> <strong>Relazione:</strong> \${p.intro.relationshipStatus || 'Non specificata'}</p>
+          <p class="flex items-center gap-2"><i class="fas fa-clock text-gray-500"></i> <strong>Data di iscrizione:</strong> \${p.intro.joinedDate || 'Facebook Member'}</p>
+        </div>
+      \`;
+    }
+
+    function renderFriendsTab() {
+      const container = document.getElementById('friendsGrid');
+      const countEl = document.getElementById('friendsTabCount');
+      if (!container) return;
+
+      const friends = pageData.friendsList || [];
+
+      if (countEl) countEl.textContent = \`Tutti gli amici (\${friends.length})\`;
+
+      container.innerHTML = '';
+      if (friends.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 col-span-2 py-8">Nessun amico presente nella lista.</p>';
+        return;
+      }
+
+      friends.forEach(f => {
+        container.innerHTML += \`
+          <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#3A3B3C]/30">
+            <img src="\${f.avatar}" class="w-16 h-16 rounded-lg object-cover" />
+            <div>
+              <h4 class="font-bold text-sm text-gray-900 dark:text-gray-100">\${f.name}</h4>
+              <p class="text-xs text-gray-500 mt-0.5">\${f.mutualFriends || 'Amico su Facebook'}</p>
+            </div>
+          </div>
+        \`;
+      });
+    }
+
+    function renderPhotosTab() {
+      const container = document.getElementById('allPhotosGrid');
+      if (!container) return;
+
+      const p = pageData.profile;
+      const allImgs = [];
+      if (p.avatarUrl) allImgs.push(p.avatarUrl);
+      if (p.coverUrl) allImgs.push(p.coverUrl);
+      if (p.featuredPhotos) allImgs.push(...p.featuredPhotos);
+
+      (pageData.posts || []).forEach(post => {
+        if (post.imageUrls && post.imageUrls.length > 0) {
+          allImgs.push(...post.imageUrls);
+        }
+      });
+
+      const uniqueImgs = Array.from(new Set(allImgs));
+      container.innerHTML = '';
+
+      uniqueImgs.forEach(url => {
+        container.innerHTML += \`
+          <div onclick="openLightbox('\${url}')" class="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shadow-xs cursor-pointer group">
+            <img src="\${url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          </div>
+        \`;
+      });
+    }
+
+    function renderVideosTab() {
+      const container = document.getElementById('allVideosGrid');
+      if (!container) return;
+
+      const videoPosts = (pageData.posts || []).filter(p => p.type === 'video' && p.videoUrl);
+      container.innerHTML = '';
+
+      if (videoPosts.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 col-span-2 py-8">Nessun video presente nella bacheca.</p>';
+        return;
+      }
+
+      videoPosts.forEach(post => {
+        let videoPlayer = '';
+        if (post.isEmbedIframe || post.videoUrl.includes('youtube') || post.videoUrl.includes('embed')) {
+          videoPlayer = \`<iframe src="\${post.videoUrl}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>\`;
+        } else {
+          videoPlayer = \`<video src="\${post.videoUrl}" controls class="w-full h-full object-cover"></video>\`;
+        }
+
+        container.innerHTML += \`
+          <div class="bg-gray-50 dark:bg-[#3A3B3C]/50 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="aspect-video w-full bg-black">\${videoPlayer}</div>
+            <div class="p-3">
+              <h4 class="font-bold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">\${post.videoTitle || post.content || 'Video Facebook'}</h4>
+              <p class="text-xs text-gray-500 mt-1">\${post.timestamp}</p>
+            </div>
+          </div>
+        \`;
+      });
+    }
+
+    function renderReelsTab() {
+      const container = document.getElementById('allReelsGrid');
+      if (!container) return;
+
+      const reelPosts = (pageData.posts || []).filter(p => p.type === 'reel' && p.videoUrl);
+      container.innerHTML = '';
+
+      if (reelPosts.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 col-span-4 py-8">Nessun Reel pubblicato.</p>';
+        return;
+      }
+
+      reelPosts.forEach(post => {
+        container.innerHTML += \`
+          <div class="relative aspect-[9/16] bg-black rounded-xl overflow-hidden shadow-lg border border-gray-800">
+            <video src="\${post.videoUrl}" controls loop class="w-full h-full object-cover"></video>
+            <div class="absolute top-2 left-2 bg-pink-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">REEL</div>
+            \${post.reelViewsCount ? \`<div class="absolute bottom-2 left-2 text-white text-[11px] font-bold flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded"><i class="fas fa-play"></i> \${post.reelViewsCount.toLocaleString()}</div>\` : ''}
+          </div>
+        \`;
+      });
+    }
+
+    function switchTab(tabName) {
+      ['posts', 'about', 'friends', 'photos', 'videos', 'reels'].forEach(t => {
+        const content = document.getElementById('content-' + t);
+        const btn = document.getElementById('tab-' + t);
+        if (content) content.classList.add('hidden');
+        if (btn) {
+          btn.classList.remove('text-[#1877F2]', 'border-b-4', 'border-[#1877F2]', 'font-semibold');
+        }
+      });
+
+      // Update Nav Icons
+      ['home', 'videos', 'photos', 'friends'].forEach(nav => {
+        const navBtn = document.getElementById('nav-' + nav);
+        if (navBtn) {
+          navBtn.classList.remove('text-[#1877F2]', 'border-b-4', 'border-[#1877F2]');
+          navBtn.classList.add('text-gray-500', 'dark:text-gray-400');
+        }
+      });
+
+      const activeContent = document.getElementById('content-' + tabName);
+      const activeBtn = document.getElementById('tab-' + tabName);
+      if (activeContent) activeContent.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.add('text-[#1877F2]', 'border-b-4', 'border-[#1877F2]', 'font-semibold');
+      }
+
+      // Highlight Nav Icon
+      if (tabName === 'posts') {
+        const n = document.getElementById('nav-home');
+        if (n) { n.classList.add('text-[#1877F2]', 'border-b-4', 'border-[#1877F2]'); n.classList.remove('text-gray-500'); }
+      } else if (tabName === 'videos' || tabName === 'reels') {
+        const n = document.getElementById('nav-videos');
+        if (n) { n.classList.add('text-[#1877F2]', 'border-b-4', 'border-[#1877F2]'); n.classList.remove('text-gray-500'); }
+      } else if (tabName === 'photos') {
+        const n = document.getElementById('nav-photos');
+        if (n) { n.classList.add('text-[#1877F2]', 'border-b-4', 'border-[#1877F2]'); n.classList.remove('text-gray-500'); }
+      } else if (tabName === 'friends') {
+        const n = document.getElementById('nav-friends');
+        if (n) { n.classList.add('text-[#1877F2]', 'border-b-4', 'border-[#1877F2]'); n.classList.remove('text-gray-500'); }
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>`;
+}
