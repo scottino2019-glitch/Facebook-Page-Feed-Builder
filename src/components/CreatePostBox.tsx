@@ -35,6 +35,7 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
 
   // Media state
   const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
   const [isEmbedIframe, setIsEmbedIframe] = useState(false);
@@ -48,18 +49,41 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
   const [linkDomain, setLinkDomain] = useState('');
   const [linkImage, setLinkImage] = useState('');
 
-  // File Upload Helper
+  // File Upload Helpers
+  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      const promises = fileArray.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (uploadEvent) => {
+            resolve(uploadEvent.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+      Promise.all(promises).then((newUrls) => {
+        setImageUrls((prev) => [...prev, ...newUrls]);
+      });
+    }
+  };
+
+  const removeImageAt = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'image' | 'video') => {
+    if (target === 'image') {
+      handleMultipleImageUpload(e);
+      return;
+    }
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (uploadEvent) => {
         const result = uploadEvent.target?.result as string;
-        if (target === 'image') {
-          setImageUrl(result);
-        } else {
-          setVideoUrl(result);
-        }
+        setVideoUrl(result);
       };
       reader.readAsDataURL(file);
     }
@@ -67,7 +91,8 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() && !imageUrl && !videoUrl && !linkUrl) return;
+    const finalImages = imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : undefined);
+    if (!content.trim() && (!finalImages || finalImages.length === 0) && !videoUrl && !linkUrl) return;
 
     const newPost: Post = {
       id: `post-${Date.now()}`,
@@ -80,7 +105,7 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
       type: postType,
       content,
       textBackgroundPreset: postType === 'text' ? textBackgroundPreset : undefined,
-      imageUrls: imageUrl ? [imageUrl] : undefined,
+      imageUrls: finalImages,
       videoUrl: videoUrl || undefined,
       videoTitle: videoTitle || undefined,
       isEmbedIframe: isEmbedIframe || videoUrl.includes('youtube') || videoUrl.includes('embed'),
@@ -100,6 +125,7 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
     // Reset Form
     setContent('');
     setImageUrl('');
+    setImageUrls([]);
     setVideoUrl('');
     setVideoTitle('');
     setIsEmbedIframe(false);
@@ -326,30 +352,75 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
 
           {/* Media Inputs based on postType */}
           {postType === 'image' && (
-            <div className="p-3 bg-gray-50 dark:bg-[#3A3B3C]/50 rounded-lg space-y-2 border border-gray-200 dark:border-[#393A3B]">
-              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
-                Seleziona o Inserisci Immagine:
-              </label>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="text" 
-                  value={imageUrl} 
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Incolla URL immagine (es. https://...)" 
-                  className="flex-1 bg-white dark:bg-[#3A3B3C] text-xs p-2 rounded border border-gray-200 dark:border-[#393A3B] outline-none"
-                />
-                <label className="bg-[#1877F2] hover:bg-[#166FE5] text-white px-3 py-1.5 rounded text-xs font-semibold cursor-pointer flex items-center gap-1">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Sfoglia</span>
-                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'image')} className="hidden" />
+            <div className="p-3 bg-gray-50 dark:bg-[#3A3B3C]/50 rounded-xl space-y-3 border border-gray-200 dark:border-[#393A3B]">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  Carica Foto (Selezione Multipla):
                 </label>
-              </div>
-              {imageUrl && (
-                <div className="relative mt-2 max-h-48 overflow-hidden rounded border">
-                  <img src={imageUrl} alt="Anteprima" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => setImageUrl('')} className="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full">
-                    <X className="w-4 h-4" />
+                {imageUrls.length > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => setImageUrls([])} 
+                    className="text-xs font-semibold text-red-500 hover:underline"
+                  >
+                    Rimuovi tutte
                   </button>
+                )}
+              </div>
+
+              {/* Multi-Image Grid Preview */}
+              {imageUrls.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {imageUrls.map((url, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 group">
+                      <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => removeImageAt(idx)}
+                        className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white p-1 rounded-full shadow transition-all"
+                        title="Rimuovi foto"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Add More Button */}
+                  <label className="aspect-square border-2 border-dashed border-[#1877F2] bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100/50 dark:hover:bg-blue-900/20 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors p-2 text-[#1877F2]">
+                    <Plus className="w-6 h-6 mb-1" />
+                    <span className="text-[11px] font-bold text-center">+ Aggiungi</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleMultipleImageUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      value={imageUrl} 
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="Incolla URL immagine o seleziona dal PC/cellulare..." 
+                      className="flex-1 bg-white dark:bg-[#3A3B3C] text-xs p-2 rounded border border-gray-200 dark:border-[#393A3B] outline-none"
+                    />
+                  </div>
+
+                  <label className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white py-2.5 px-4 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-2 shadow-sm transition-all">
+                    <Upload className="w-4 h-4" />
+                    <span>Sfoglia e Carica Foto (Puoi selezionarne più di una)</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleMultipleImageUpload} 
+                      className="hidden" 
+                    />
+                  </label>
                 </div>
               )}
             </div>

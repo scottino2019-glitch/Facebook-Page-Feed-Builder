@@ -16,12 +16,38 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, onSave, onCl
   const [textBackgroundPreset, setTextBackgroundPreset] = useState<string | undefined>(post.textBackgroundPreset);
   
   const [imageUrl, setImageUrl] = useState(post.imageUrls?.[0] || '');
+  const [imageUrls, setImageUrls] = useState<string[]>(post.imageUrls || (post.imageUrls?.[0] ? [post.imageUrls[0]] : []));
   const [videoUrl, setVideoUrl] = useState(post.videoUrl || '');
   const [videoTitle, setVideoTitle] = useState(post.videoTitle || '');
   const [reelAudioTitle, setReelAudioTitle] = useState(post.reelAudioTitle || '');
 
+  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      const promises = fileArray.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (uploadEvent) => {
+            resolve(uploadEvent.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+      Promise.all(promises).then((newUrls) => {
+        setImageUrls((prev) => [...prev, ...newUrls]);
+      });
+    }
+  };
+
+  const removeImageAt = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const finalImages = imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : undefined);
 
     const updatedPost: Post = {
       ...post,
@@ -30,7 +56,7 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, onSave, onCl
       timestamp,
       isPinned,
       textBackgroundPreset: post.type === 'text' ? textBackgroundPreset : undefined,
-      imageUrls: imageUrl ? [imageUrl] : undefined,
+      imageUrls: finalImages,
       videoUrl: videoUrl || undefined,
       videoTitle: videoTitle || undefined,
       reelAudioTitle: post.type === 'reel' ? reelAudioTitle : undefined
@@ -125,16 +151,73 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, onSave, onCl
             </div>
           </div>
 
-          {/* Media URL if Image / Video */}
+          {/* Media URL if Image */}
           {post.type === 'image' && (
-            <div>
-              <label className="font-semibold text-gray-700 dark:text-gray-300 block mb-1">URL Immagine:</label>
-              <input 
-                type="text" 
-                value={imageUrl} 
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-[#3A3B3C] p-2 rounded border border-gray-200 dark:border-gray-700 outline-none"
-              />
+            <div className="p-3 bg-gray-50 dark:bg-[#3A3B3C]/50 rounded-xl space-y-3 border border-gray-200 dark:border-[#393A3B]">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  Foto del Post (Selezione Multipla):
+                </label>
+                {imageUrls.length > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => setImageUrls([])} 
+                    className="text-xs font-semibold text-red-500 hover:underline"
+                  >
+                    Rimuovi tutte
+                  </button>
+                )}
+              </div>
+
+              {imageUrls.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {imageUrls.map((url, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 group">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => removeImageAt(idx)}
+                        className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white p-1 rounded-full shadow transition-all"
+                        title="Rimuovi"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="aspect-square border-2 border-dashed border-[#1877F2] bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100/50 rounded-lg flex flex-col items-center justify-center cursor-pointer p-1 text-[#1877F2]">
+                    <Upload className="w-5 h-5 mb-1" />
+                    <span className="text-[10px] font-bold">+ Aggiungi</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleMultipleImageUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <input 
+                    type="text" 
+                    value={imageUrl} 
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="Incolla URL immagine..." 
+                    className="w-full bg-white dark:bg-[#3A3B3C] text-xs p-2 rounded border border-gray-200 dark:border-[#393A3B] outline-none"
+                  />
+                  <label className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white py-2 px-3 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
+                    <Upload className="w-4 h-4" />
+                    <span>Sfoglia e Carica Foto (Scelta Multipla)</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleMultipleImageUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+              )}
             </div>
           )}
 
