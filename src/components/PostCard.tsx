@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { Post, ReactionType, PrivacyOption, Comment } from '../types';
+import { getYouTubeEmbedUrl, isYouTubeUrl } from '../utils/mediaUtils';
 
 interface PostCardProps {
   post: Post;
@@ -234,87 +235,97 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Media Content Rendering */}
       
       {/* 1. Single Image or Gallery Grid */}
-      {post.type === 'image' && post.imageUrls && post.imageUrls.length > 0 && (
-        <div className="mt-2 bg-[#0f0f0f] relative overflow-hidden">
-          {post.imageUrls.length === 1 ? (
-            <div 
-              onClick={() => setLightboxUrl(post.imageUrls![0])}
-              className="relative group cursor-pointer overflow-hidden flex justify-center items-center"
-            >
-              <img 
-                src={post.imageUrls[0]} 
-                alt="Media post" 
-                className="w-full h-auto max-h-[650px] object-contain transition-transform duration-200 group-hover:scale-[1.01]"
-              />
-              <div className="absolute top-3 right-3 bg-black/70 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span>Ingrandisci Foto</span>
-              </div>
-            </div>
-          ) : (
-            <div className={`grid gap-1 ${
-              post.imageUrls.length === 2 ? 'grid-cols-2' :
-              post.imageUrls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
-            }`}>
-              {post.imageUrls.slice(0, 4).map((url, idx) => {
-                const isThirdOfThree = post.imageUrls!.length === 3 && idx === 0;
-                const isFourthPlus = post.imageUrls!.length > 4 && idx === 3;
-                const remainingCount = post.imageUrls!.length - 4;
+      {post.type === 'image' && (() => {
+        const imgs = post.imageUrls || post.images || (post.imageUrl ? [post.imageUrl] : undefined) || (post.mediaUrl ? [post.mediaUrl] : undefined);
+        if (!imgs || imgs.length === 0) return null;
 
-                return (
-                  <div 
-                    key={idx} 
-                    onClick={() => setLightboxUrl(url)}
-                    className={`relative cursor-pointer overflow-hidden group aspect-square ${
-                      isThirdOfThree ? 'row-span-2 aspect-auto h-full' : ''
-                    }`}
-                  >
-                    <img 
-                      src={url} 
-                      alt={`Foto ${idx + 1}`} 
-                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                    {isFourthPlus && (
-                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white font-bold text-2xl backdrop-blur-xs">
-                        <span>+{remainingCount}</span>
-                        <span className="text-xs font-normal">altre foto</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+        return (
+          <div className="mt-2 bg-[#0f0f0f] relative overflow-hidden rounded-lg">
+            {imgs.length === 1 ? (
+              <div 
+                onClick={() => setLightboxUrl(imgs[0])}
+                className="relative group cursor-pointer overflow-hidden flex justify-center items-center"
+              >
+                <img 
+                  src={imgs[0]} 
+                  alt="Media post" 
+                  className="w-full h-auto max-h-[650px] object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+                />
+                <div className="absolute top-3 right-3 bg-black/70 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Ingrandisci Foto</span>
+                </div>
+              </div>
+            ) : (
+              <div className={`grid gap-1 ${
+                imgs.length === 2 ? 'grid-cols-2' :
+                imgs.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
+              }`}>
+                {imgs.slice(0, 4).map((url, idx) => {
+                  const isThirdOfThree = imgs.length === 3 && idx === 0;
+                  const isFourthPlus = imgs.length > 4 && idx === 3;
+                  const remainingCount = imgs.length - 4;
+
+                  return (
+                    <div 
+                      key={idx} 
+                      onClick={() => setLightboxUrl(url)}
+                      className={`relative cursor-pointer overflow-hidden group aspect-square ${
+                        isThirdOfThree ? 'row-span-2 aspect-auto h-full' : ''
+                      }`}
+                    >
+                      <img 
+                        src={url} 
+                        alt={`Foto ${idx + 1}`} 
+                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                      {isFourthPlus && (
+                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white font-bold text-2xl backdrop-blur-xs">
+                          <span>+{remainingCount}</span>
+                          <span className="text-xs font-normal">altre foto</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 2. Video Player or Embed */}
-      {post.type === 'video' && post.videoUrl && (
-        <div className="mt-2 bg-black">
-          {post.isEmbedIframe || post.videoUrl.includes('youtube') || post.videoUrl.includes('embed') ? (
-            <div className="aspect-video w-full">
-              <iframe 
+      {post.type === 'video' && post.videoUrl && (() => {
+        const isYoutube = isYouTubeUrl(post.videoUrl) || post.isEmbedIframe;
+        const embedUrl = isYoutube ? getYouTubeEmbedUrl(post.videoUrl) : post.videoUrl;
+
+        return (
+          <div className="mt-2 bg-black rounded-lg overflow-hidden">
+            {isYoutube ? (
+              <div className="aspect-video w-full">
+                <iframe 
+                  src={embedUrl} 
+                  title={post.videoTitle || 'Video Embed'} 
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <video 
                 src={post.videoUrl} 
-                title={post.videoTitle || 'Video Embed'} 
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowFullScreen
+                controls 
+                className="w-full max-h-[500px] mx-auto"
               />
-            </div>
-          ) : (
-            <video 
-              src={post.videoUrl} 
-              controls 
-              className="w-full max-h-[500px] mx-auto"
-            />
-          )}
-          {post.videoTitle && (
-            <div className="p-3 bg-gray-900 text-white text-xs font-semibold">
-              {post.videoTitle}
-            </div>
-          )}
-        </div>
-      )}
+            )}
+            {post.videoTitle && (
+              <div className="p-3 bg-gray-900 text-white text-xs font-semibold">
+                {post.videoTitle}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 3. Reel Video Player (Vertical 9:16 Aspect) */}
       {post.type === 'reel' && post.videoUrl && (

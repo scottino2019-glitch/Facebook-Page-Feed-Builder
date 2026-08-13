@@ -1,5 +1,6 @@
 import { FBPageData } from '../types';
 import { defaultFBPageData } from '../data/defaultData';
+import { normalizePostMedia } from './mediaUtils';
 
 const LOCAL_STORAGE_KEY = 'fb_builder_page_data_v1';
 
@@ -9,19 +10,24 @@ export function loadPageData(): FBPageData {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed && parsed.profile && Array.isArray(parsed.posts)) {
+        parsed.posts = parsed.posts.map(normalizePostMedia);
         return parsed;
       }
     }
   } catch (e) {
     console.error("Failed to load page data from localStorage", e);
   }
-  return defaultFBPageData;
+  return {
+    ...defaultFBPageData,
+    posts: defaultFBPageData.posts.map(normalizePostMedia)
+  };
 }
 
 export function savePageData(data: FBPageData): void {
   try {
     const updatedData: FBPageData = {
       ...data,
+      posts: data.posts ? data.posts.map(normalizePostMedia) : [],
       updatedAt: new Date().toISOString()
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedData));
@@ -31,7 +37,12 @@ export function savePageData(data: FBPageData): void {
 }
 
 export function exportJsonFile(data: FBPageData, filename = 'facebook_feed.json'): void {
-  const jsonStr = JSON.stringify(data, null, 2);
+  const normalizedData: FBPageData = {
+    ...data,
+    posts: data.posts ? data.posts.map(normalizePostMedia) : [],
+    updatedAt: new Date().toISOString()
+  };
+  const jsonStr = JSON.stringify(normalizedData, null, 2);
   const blob = new Blob([jsonStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -57,5 +68,6 @@ export function parseJsonString(jsonString: string): FBPageData {
   if (!Array.isArray(parsed.posts)) {
     throw new Error('La sezione "posts" deve essere un array.');
   }
+  parsed.posts = parsed.posts.map(normalizePostMedia);
   return parsed as FBPageData;
 }

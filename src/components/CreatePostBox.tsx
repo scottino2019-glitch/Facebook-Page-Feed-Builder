@@ -16,6 +16,7 @@ import {
   Sparkles 
 } from 'lucide-react';
 import { Post, PostType, PrivacyOption, ProfileInfo } from '../types';
+import { getYouTubeEmbedUrl, isYouTubeUrl } from '../utils/mediaUtils';
 
 interface CreatePostBoxProps {
   profile: ProfileInfo;
@@ -106,9 +107,10 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
       content,
       textBackgroundPreset: postType === 'text' ? textBackgroundPreset : undefined,
       imageUrls: finalImages,
-      videoUrl: videoUrl || undefined,
+      images: finalImages,
+      videoUrl: videoUrl ? (isYouTubeUrl(videoUrl) ? getYouTubeEmbedUrl(videoUrl) : videoUrl) : undefined,
       videoTitle: videoTitle || undefined,
-      isEmbedIframe: isEmbedIframe || videoUrl.includes('youtube') || videoUrl.includes('embed'),
+      isEmbedIframe: isEmbedIframe || (videoUrl ? isYouTubeUrl(videoUrl) : false),
       reelAudioTitle: postType === 'reel' ? (reelAudioTitle || `${profile.name} • Suono originale`) : undefined,
       reelViewsCount: postType === 'reel' ? 1200 : undefined,
       linkUrl: linkUrl || undefined,
