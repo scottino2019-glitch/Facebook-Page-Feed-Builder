@@ -270,43 +270,55 @@ export const CreatePostBox: React.FC<CreatePostBoxProps> = ({ profile, onAddPost
 
           {/* Text Colorful Background Preset Picker */}
           {postType === 'text' && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                <Palette className="w-3.5 h-3.5" /> Sfondo sfumato:
-              </span>
-              <div className="flex items-center gap-1.5">
+            <div className="bg-gray-50 dark:bg-[#3A3B3C]/50 p-3 rounded-xl border border-gray-200/80 dark:border-gray-700 space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-300">
+                <span className="flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-purple-500" />
+                  <span>Sfondo sfumato:</span>
+                </span>
+                {textBackgroundPreset && (
+                  <button 
+                    type="button" 
+                    onClick={() => setTextBackgroundPreset(undefined)}
+                    className="text-[#1877F2] hover:underline text-[11px] font-bold"
+                  >
+                    Rimuovi Sfondo
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar">
                 <button
                   type="button"
                   onClick={() => setTextBackgroundPreset(undefined)}
-                  className={`w-6 h-6 rounded-full border border-gray-300 bg-white dark:bg-[#3A3B3C] text-[10px] ${!textBackgroundPreset ? 'ring-2 ring-[#1877F2]' : ''}`}
+                  className={`w-8 h-8 rounded-lg border-2 border-gray-300 dark:border-gray-500 bg-white dark:bg-[#242526] text-xs font-bold text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0 ${!textBackgroundPreset ? 'ring-2 ring-[#1877F2] border-[#1877F2]' : ''}`}
                   title="Nessuno"
                 >
-                  🚫
+                  Aa
                 </button>
                 <button
                   type="button"
                   onClick={() => setTextBackgroundPreset('gradient-purple')}
-                  className={`w-6 h-6 rounded-full fb-gradient-purple ${textBackgroundPreset === 'gradient-purple' ? 'ring-2 ring-white ring-offset-1' : ''}`}
+                  className={`w-8 h-8 rounded-lg fb-gradient-purple flex-shrink-0 transition-transform active:scale-95 ${textBackgroundPreset === 'gradient-purple' ? 'ring-2 ring-offset-2 ring-[#1877F2] scale-105' : 'opacity-90 hover:opacity-100'}`}
                 />
                 <button
                   type="button"
                   onClick={() => setTextBackgroundPreset('gradient-blue')}
-                  className={`w-6 h-6 rounded-full fb-gradient-blue ${textBackgroundPreset === 'gradient-blue' ? 'ring-2 ring-white ring-offset-1' : ''}`}
+                  className={`w-8 h-8 rounded-lg fb-gradient-blue flex-shrink-0 transition-transform active:scale-95 ${textBackgroundPreset === 'gradient-blue' ? 'ring-2 ring-offset-2 ring-[#1877F2] scale-105' : 'opacity-90 hover:opacity-100'}`}
                 />
                 <button
                   type="button"
                   onClick={() => setTextBackgroundPreset('gradient-pink')}
-                  className={`w-6 h-6 rounded-full fb-gradient-pink ${textBackgroundPreset === 'gradient-pink' ? 'ring-2 ring-white ring-offset-1' : ''}`}
+                  className={`w-8 h-8 rounded-lg fb-gradient-pink flex-shrink-0 transition-transform active:scale-95 ${textBackgroundPreset === 'gradient-pink' ? 'ring-2 ring-offset-2 ring-[#1877F2] scale-105' : 'opacity-90 hover:opacity-100'}`}
                 />
                 <button
                   type="button"
                   onClick={() => setTextBackgroundPreset('gradient-green')}
-                  className={`w-6 h-6 rounded-full fb-gradient-green ${textBackgroundPreset === 'gradient-green' ? 'ring-2 ring-white ring-offset-1' : ''}`}
+                  className={`w-8 h-8 rounded-lg fb-gradient-green flex-shrink-0 transition-transform active:scale-95 ${textBackgroundPreset === 'gradient-green' ? 'ring-2 ring-offset-2 ring-[#1877F2] scale-105' : 'opacity-90 hover:opacity-100'}`}
                 />
                 <button
                   type="button"
                   onClick={() => setTextBackgroundPreset('gradient-dark')}
-                  className={`w-6 h-6 rounded-full fb-gradient-dark ${textBackgroundPreset === 'gradient-dark' ? 'ring-2 ring-white ring-offset-1' : ''}`}
+                  className={`w-8 h-8 rounded-lg fb-gradient-dark flex-shrink-0 transition-transform active:scale-95 ${textBackgroundPreset === 'gradient-dark' ? 'ring-2 ring-offset-2 ring-[#1877F2] scale-105' : 'opacity-90 hover:opacity-100'}`}
                 />
               </div>
             </div>

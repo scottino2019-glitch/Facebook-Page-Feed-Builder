@@ -221,7 +221,9 @@ export const PostCard: React.FC<PostCardProps> = ({
         {post.content && (
           <div className={`mt-3 text-sm whitespace-pre-wrap leading-relaxed ${
             post.textBackgroundPreset 
-              ? `fb-${post.textBackgroundPreset} text-white font-bold text-xl text-center p-8 rounded-lg my-2 shadow-inner` 
+              ? `fb-${post.textBackgroundPreset} text-white font-bold text-xl text-center p-8 rounded-lg my-2 shadow-md` 
+              : post.bgColor
+              ? `${post.bgColor} text-white font-bold text-xl text-center p-8 rounded-lg my-2 shadow-md`
               : 'text-gray-800 dark:text-gray-100'
           }`}>
             {post.content}
