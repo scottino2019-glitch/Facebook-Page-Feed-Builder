@@ -7,7 +7,6 @@ import { defaultFBPageData } from './data/defaultData';
 import { HeaderNav } from './components/HeaderNav';
 import { ProfileHeader } from './components/ProfileHeader';
 import { IntroSidebar } from './components/IntroSidebar';
-import { StoriesBentoBar } from './components/StoriesBentoBar';
 import { CreatePostBox } from './components/CreatePostBox';
 import { PostCard } from './components/PostCard';
 import { EditProfileModal } from './components/EditProfileModal';
@@ -257,9 +256,6 @@ export default function App() {
                   {/* Right Column: Main Feed */}
                   <div className="md:col-span-7 space-y-4">
                     
-                    {/* Bento Stories Row */}
-                    <StoriesBentoBar profile={pageData.profile} />
-
                     {/* Create Post Box (Admin Only) */}
                     {mode === 'admin' && (
                       <CreatePostBox
